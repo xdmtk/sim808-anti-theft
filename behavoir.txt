@@ -1,0 +1,46 @@
+10 seconds
+green led on
+
+1 second
+start computer serial
+flash yellow
+
+start sim808 serial
+flash red
+
+1 second
+turn on gps sim808
+flash gr$a
+
+1/2 second
+initiage gsm
+flash green 5 times
+
+read response, throw it away
+flash yellow during read
+
+
+1 second
+flash red, yellow, green
+
+------------------------------
+green on
+
+1 second
+get gps
+flash red
+
+read gps
+flash yellow during read
+
+setup https request and send
+flash red 7 times
+
+
+read https response, toss it out
+flash yellow during read
+
+
+5 seconds
+
+
