@@ -76,22 +76,24 @@ void loop()
     String gps_in = "";
 
     
-    write_at_command("at+cgnsinf");
+    sim_808.write("at+cgnsinf\n");
+    debug("issued GPS command");
     
     int x = 0;
     while (sim_808.available()) {
-        gps_in.concat(sim_808.read())
+        gps_in.concat(sim_808.read());
         flash_pin(L_YEL);
     }
     debug("Got GPS string: " + gps_in);
     
     String https_request = form_request(gps_in);
 
-    if (!strcmp(https_request, "ERROR")) {
+    if (https_request.equals("ERROR")) {
         debug("Couldn't get GPS coordinates, probably not warmed up yet");
         for (int r = 0; r < 20; r++) {
             flash_pin(L_RED);
         }
+        delay(2000);
         return;
     }
     else {
@@ -104,6 +106,9 @@ void loop()
     write_at_command("at+httpssl=1");
     write_at_command("httppara=\"URL\",\"" + https_request + "\"");
     write_at_command("at+httpaction=1");
+
+    // Wait for server
+    delay(3000);
     write_at_command("at+httpread");
 
 
@@ -143,7 +148,7 @@ void startup_timer(int seconds) {
 void setup_serials() {
 
     Serial.begin(9600);
-    sim_808.being(9600);
+    sim_808.begin(9600);
 
 }
 
@@ -159,9 +164,11 @@ void read_sim808() {
 
 void write_at_command(String at_command) {
     
-    delay(500)
+    delay(500);
     flash_pin(L_RED);
-    sim_808.write(at_command + "\n");
+    at_command.concat("\n");
+    sim_808.write(at_command.c_str());
+    delay(500);
     read_sim808();
 }
 
@@ -198,22 +205,26 @@ String form_request(String gps_in) {
     
     int x, com_count, lat_index, lon_index;
     x = com_count = lat_index = lon_index = 0;
-
-    debug("Getting latitude and longitude");
-
+    
+    debug("String length of gps_in " + gps_in.length());
+    debug("Getting latitude and longitude from string: " + gps_in);
+    
     for (x=0 ; x < gps_in.length(); ++x) {
 
         // Mark fields
         if (gps_in[x] == ',') {
+            debug("Hit comma");
             com_count++;
         }
 
         // Third field get latitude
         if (com_count == 3) {
+            debug("Debugging char: " + gps_in[x]);
             lat.concat(gps_in[x]);
         }
         // Fourth field get longitude
         if (com_count == 4) {
+            debug("Debugging char: " + gps_in[x]);
             lon.concat(gps_in[x]);
         }
     }
@@ -228,8 +239,3 @@ String form_request(String gps_in) {
 
     return (url + "&lat=" + lat + "&lon=" + lon);
 }
-
-
-
-
-
