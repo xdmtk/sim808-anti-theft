@@ -39,8 +39,7 @@
 int RX_SS = 11;
 int TX_SS = 10;
 
-char * lon_url = "&lon=";
-char * lat_url = "&lat=";
+
 int L_RED = 2;
 int L_YEL = 3;
 int L_GRE = 4;
@@ -50,82 +49,125 @@ SoftwareSerial sim_808(RX_SS, TX_SS);
 
 void setup()
 {
+    setup_leds();
+    startup_timer(10);
+    setup_serials();
+ 
+    // Turn on GPS
+    write_at_command("at+cgnspwr=1");
+
+    // Setup GSM context
+    write_at_command("at+sapbr=3,1,\"CONTYPE\",\"GPRS\"");
+    write_at_command("at+sapbr=3,1,\"APN\",\"wholesale\"");
+    write_at_command("at+sapbr=1,1");
+    write_at_command("at+sapbr=2,1");
+    write_at_command("at+httpinit");
+   
+    // Flash LED's to signal setup completion
+    signal_finish_setup();    
+     
+}
+
+
+void loop()
+{
+    debug("In loop");
+
+    String gps_in = "";
+
+    
+    write_at_command("at+cgnsinf");
+    
+    int x = 0;
+    while (sim_808.available()) {
+        gps_in.concat(sim_808.read())
+        flash_pin(L_YEL);
+    }
+    debug("Got GPS string: " + gps_in);
+    
+    String https_request = form_request(gps_in);
+
+    if (!strcmp(https_request, "ERROR")) {
+        debug("Couldn't get GPS coordinates, probably not warmed up yet");
+        for (int r = 0; r < 20; r++) {
+            flash_pin(L_RED);
+        }
+        return;
+    }
+    else {
+        debug("Sending request to: " + https_request);
+    }
+
+
+
+    write_at_command("at+httppara=\"CID\",1");
+    write_at_command("at+httpssl=1");
+    write_at_command("httppara=\"URL\",\"" + https_request + "\"");
+    write_at_command("at+httpaction=1");
+    write_at_command("at+httpread");
+
+
+    debug("Successfully deployed request");
+    delay(5000);
+    
+}
+
+
+void debug(String log) {
+    Serial.println(log);
+}
+
+
+void setup_leds() {
+
     pinMode(L_RED, OUTPUT);
     pinMode(L_YEL, OUTPUT);
     pinMode(L_GRE, OUTPUT);
+}
 
-    // Wait 10 seconds on start up, then turn green LED on
-    delay(10000);
-    digitalWrite(L_GRE, HIGH);
 
-    // Start computer serial and flash yellow
-    delay(1000);
-    Serial.begin(9600);
+void startup_timer(int seconds) { 
+
+    digitalWrite(L_RED, HIGH);
+    delay((seconds*1000)/2);
+    
+    digitalWrite(L_RED, LOW);
+    digitalWrite(L_YEL, HIGH);
+    delay((seconds*1000)/2);
+
     flash_pin(L_YEL);
-   
-    // Start SIM808 serial and flash red
-    sim_808.begin(9600);
-    flash_pin(L_RED);
-   
-    // Turn on GPS and flash green, then permanent green
-    delay(1000);
-    sim_808.write("at+cgnspwr=1\n");
-    flash_pin(L_GRE);
     digitalWrite(L_GRE, HIGH);
-    
+}
 
-    // Initiate GSM 
-    delay(500);
-    sim_808.write("at+sapbr=3,1,\"CONTYPE\",\"GPRS\"\n");
-    flash_pin(L_GRE);
-    // Toss out first read ( possible junk info on startup)
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
 
-    delay(500);
-    sim_808.write("at+sapbr=3,1,\"APN\",\"wholesale\"\n");
-    flash_pin(L_GRE);
-    // Toss out first read ( possible junk info on startup)
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    
-    delay(500);
-    sim_808.write("at+sapbr=1,1\n");
-    flash_pin(L_GRE);
-    // Toss out first read ( possible junk info on startup)
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
+void setup_serials() {
 
-    delay(500);
-    sim_808.write("at+sapbr=2,1\n");
-    flash_pin(L_GRE);
-    // Toss out first read ( possible junk info on startup)
+    Serial.begin(9600);
+    sim_808.being(9600);
+
+}
+
+
+void read_sim808() {
+
     while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
+        Serial.write(sim_808.read());
         flash_pin(L_YEL);
     }
+}
+
+
+void write_at_command(String at_command) {
     
-    delay(500);
-    sim_808.write("at+httpinit\n");
-    flash_pin(L_GRE);
-    
-    // Toss out first read ( possible junk info on startup)
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    
+    delay(500)
+    flash_pin(L_RED);
+    sim_808.write(at_command + "\n");
+    read_sim808();
+}
+
+
+void signal_finish_setup() {
+
     for (int f = 0; f < 10; f++) {
         flash_pin(L_RED);
         delay(100);
@@ -147,121 +189,20 @@ void flash_pin(int pin) {
 
 
 
-void loop()
-{
-    Serial.println("In loop");
-    for (int f = 0; f < 15; f++) {
-        flash_pin(L_RED);
-        delay(100);
-        flash_pin(L_YEL);
-        delay(100);
-    }
-    digitalWrite(L_GRE, HIGH);
+String form_request(String gps_in) {
 
-    // Initialize gps read array
-    Serial.println("About to initialize gps in");
-    char gps_in[512];
-    for (int x = 0; x < 512; ++x) {
-        gps_in[x] = '\0';
-    }
-    
-    // Issue GPS get 
-    delay(1000);
-    sim_808.write("at+cgnsinf\n");
-    flash_pin(L_RED);
-    
-    int x = 0;
-    while (sim_808.available()) {
-        gps_in[x] = sim_808.read();
-        if (gps_in[x] == -1) {
-            break;
-        }
-        Serial.write(gps_in[x]);
-        flash_pin(L_YEL);
-        x++;
-    }
-    Serial.println("About to enter form request");
-    
-    char * https_request = form_request(gps_in);
+    debug("In form request");
+    String lat = ""; 
+    String lon = "";
 
-    if (!strcmp(https_request, "ERROR")) {
-        Serial.println("Couldn't get GPS coordinates, probably not warmed up yet");
-        for (int r = 0; r < 20; r++) {
-            flash_pin(L_RED);
-        }
-        return;
-    }
-    else {
-        Serial.println(https_request);
-    }
-    sim_808.write("at+httppara=\"CID\",1\n");
-    flash_pin(L_RED);
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    sim_808.write("at+httpssl=1\n");
-    flash_pin(L_RED);
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    sim_808.write("httppara=\"URL\",\"");
-    flash_pin(L_RED);
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    sim_808.write(https_request);
-    flash_pin(L_RED);
-    sim_808.write("\"\n");
-    flash_pin(L_RED);
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    sim_808.write("at+httpaction=1\n");
-    flash_pin(L_RED);
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    sim_808.write("at+httpread\n");
-    flash_pin(L_RED);
-
-
-    // Toss out HTTP response, flash yellow 
-    while (sim_808.available()) {
-        char c = sim_808.read();
-        Serial.write(c);
-        flash_pin(L_YEL);
-    }
-    delay(5000);
     
-}
-
-char * form_request(char * gps_in) {
-    char lat[32];
-    char lon[32];
-    Serial.println("In form request");
-    for (int y = 0; y < 32; ++y) {
-        lat[y] = '\0';
-        lon[y] = '\0';
-    }
-    
-    Serial.println("Zeroed out lat and lon");
     int x, com_count, lat_index, lon_index;
     x = com_count = lat_index = lon_index = 0;
 
+    debug("Getting latitude and longitude");
 
-    Serial.println("about to split CSV");
-    // Split CSV
-    for (; x < 512; ++x) {
+    for (x=0 ; x < gps_in.length(); ++x) {
+
         // Mark fields
         if (gps_in[x] == ',') {
             com_count++;
@@ -269,32 +210,23 @@ char * form_request(char * gps_in) {
 
         // Third field get latitude
         if (com_count == 3) {
-            lat[lat_index++] = gps_in[x];
+            lat.concat(gps_in[x]);
         }
         // Fourth field get longitude
         if (com_count == 4) {
-            lon[lon_index++] = gps_in[x];
+            lon.concat(gps_in[x]);
         }
     }
-    if ((lat_index < 2) || (lon_index < 2)) {
+
+    if (lat.length() && lon.length()) {
+        debug("Got lat: " + lat);
+        debug("Got lon: " + lat);
+    }
+    else {
         return "ERROR";
     }
-    Serial.print("Lat: ");
-    Serial.println(lat);
-    Serial.print("Lon: ");
-    Serial.println(lon);
-    Serial.println("About to do concatenations");
 
-    char * n_lon_url = strcat(lon_url, lon);
-    Serial.println("Concat 1");
-    char * n_lat_url = strcat(lat_url, lon);
-    Serial.println("Concat 2");
-    char * n_url = strcat(url, n_lon_url);
-    Serial.println("Concat 3");
-    char * n_n_url = strcat(n_url, lat_url);
-    Serial.println("Concat 4");
-    Serial.println(n_n_url);    
-    return n_n_url;
+    return (url + "&lat=" + lat + "&lon=" + lon);
 }
 
 
