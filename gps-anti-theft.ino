@@ -50,7 +50,7 @@ SoftwareSerial sim_808(RX_SS, TX_SS);
 void setup()
 {
     setup_leds();
-    startup_timer(10);
+    startup_timer(16);
     setup_serials();
  
     // Turn on GPS
@@ -73,18 +73,21 @@ void loop()
 {
     debug("In loop");
 
-    String gps_in = "";
-
+    char gps_in[512];
+    for (int cl=0; cl < 512; cl++) {
+        gps_in[cl] = '\0';
+    }
     
     sim_808.write("at+cgnsinf\n");
     debug("issued GPS command");
     
-    int x = 0;
-    while (sim_808.available()) {
-        gps_in.concat(sim_808.read());
-        flash_pin(L_YEL);
+    if (sim_808.available()) {
+        int x = 0;
+        while (sim_808.available()) {
+            gps_in[x++] = sim_808.read();
+            flash_pin(L_YEL);
+        }
     }
-    debug("Got GPS string: " + gps_in);
     
     String https_request = form_request(gps_in);
 
@@ -100,11 +103,17 @@ void loop()
         debug("Sending request to: " + https_request);
     }
 
-
+    char at_https_request[512];
+    for (int cl=0; cl < 512; cl++) {
+        at_https_request[cl] = '\0';
+    }
+    strcpy(at_https_request, "httppara=\"URL\"");
+    strcat(at_https_request, https_request.c_str());
+    strcat(at_https_request, "\"\n");
 
     write_at_command("at+httppara=\"CID\",1");
     write_at_command("at+httpssl=1");
-    write_at_command("httppara=\"URL\",\"" + https_request + "\"");
+    write_at_command_c(at_https_request);
     write_at_command("at+httpaction=1");
 
     // Wait for server
@@ -171,6 +180,14 @@ void write_at_command(String at_command) {
     delay(500);
     read_sim808();
 }
+void write_at_command_c(char * at_command) {
+    
+    delay(500);
+    flash_pin(L_RED);
+    sim_808.write(at_command);
+    delay(500);
+    read_sim808();
+}
 
 
 void signal_finish_setup() {
@@ -215,6 +232,9 @@ String form_request(String gps_in) {
         if (gps_in[x] == ',') {
             debug("Hit comma");
             com_count++;
+            if (gps_in[x+1] != ',') {
+                x++;
+            }
         }
 
         // Third field get latitude
@@ -229,7 +249,8 @@ String form_request(String gps_in) {
         }
     }
 
-    if (lat.length() && lon.length()) {
+    if ((lat.length() > 3) && (lon.length() > 3)) {
+
         debug("Got lat: " + lat);
         debug("Got lon: " + lat);
     }
