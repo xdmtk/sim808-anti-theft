@@ -71,7 +71,7 @@ void setup()
 
 void loop()
 {
-    
+    // Send GPS at command    
     write_at_command("at+cgnsinf");
     
     if (sim_808.available()) {
@@ -83,21 +83,22 @@ void loop()
             flash_pin(L_YEL);
         }
     }
-    strcpy(at_https_request, "httppara=\"URL\"");
-    strcat(at_https_request, https_request.c_str());
-    strcat(at_https_request, "\"\n");
-
     write_at_command("at+httppara=\"CID\",1");
     write_at_command("at+httpssl=1");
     write_at_command_c(at_https_request);
     write_at_command("at+httpaction=1");
 
-    // Wait for server
+
+
+    // Wait for server response, then read reply
     delay(3000);
     write_at_command("at+httpread");
 
-
+    // TODO: Add logic to check for HTTP status 
     debug("Successfully deployed request");
+
+    // Terminate HTTP context
+    write_at_command("at+httpterm");
     delay(5000);
     
 }
