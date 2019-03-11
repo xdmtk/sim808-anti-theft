@@ -71,41 +71,17 @@ void setup()
 
 void loop()
 {
-    debug("In loop");
-
-    char gps_in[512];
-    for (int cl=0; cl < 512; cl++) {
-        gps_in[cl] = '\0';
-    }
     
-    sim_808.write("at+cgnsinf\n");
-    debug("issued GPS command");
+    write_at_command("at+cgnsinf");
     
     if (sim_808.available()) {
         int x = 0;
         while (sim_808.available()) {
-            gps_in[x++] = sim_808.read();
+            // READ GPS DATA HERE
+        
+
             flash_pin(L_YEL);
         }
-    }
-    
-    String https_request = form_request(gps_in);
-
-    if (https_request.equals("ERROR")) {
-        debug("Couldn't get GPS coordinates, probably not warmed up yet");
-        for (int r = 0; r < 20; r++) {
-            flash_pin(L_RED);
-        }
-        delay(2000);
-        return;
-    }
-    else {
-        debug("Sending request to: " + https_request);
-    }
-
-    char at_https_request[512];
-    for (int cl=0; cl < 512; cl++) {
-        at_https_request[cl] = '\0';
     }
     strcpy(at_https_request, "httppara=\"URL\"");
     strcat(at_https_request, https_request.c_str());
@@ -212,51 +188,3 @@ void flash_pin(int pin) {
 }
 
 
-
-String form_request(String gps_in) {
-
-    debug("In form request");
-    String lat = ""; 
-    String lon = "";
-
-    
-    int x, com_count, lat_index, lon_index;
-    x = com_count = lat_index = lon_index = 0;
-    
-    debug("String length of gps_in " + gps_in.length());
-    debug("Getting latitude and longitude from string: " + gps_in);
-    
-    for (x=0 ; x < gps_in.length(); ++x) {
-
-        // Mark fields
-        if (gps_in[x] == ',') {
-            debug("Hit comma");
-            com_count++;
-            if (gps_in[x+1] != ',') {
-                x++;
-            }
-        }
-
-        // Third field get latitude
-        if (com_count == 3) {
-            debug("Debugging char: " + gps_in[x]);
-            lat.concat(gps_in[x]);
-        }
-        // Fourth field get longitude
-        if (com_count == 4) {
-            debug("Debugging char: " + gps_in[x]);
-            lon.concat(gps_in[x]);
-        }
-    }
-
-    if ((lat.length() > 3) && (lon.length() > 3)) {
-
-        debug("Got lat: " + lat);
-        debug("Got lon: " + lat);
-    }
-    else {
-        return "ERROR";
-    }
-
-    return (url + "&lat=" + lat + "&lon=" + lon);
-}
