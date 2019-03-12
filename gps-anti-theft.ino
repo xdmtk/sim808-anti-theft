@@ -64,7 +64,7 @@ void setup()
     write_at_command("at+httpinit");
    
     // Flash LED's to signal setup completion
-    signal_finish_setup();    
+    //signal_finish_setup();    
      
 }
 
@@ -72,30 +72,49 @@ void setup()
 void loop()
 {
     // Send GPS at command    
-    write_at_command("at+cgnsinf");
     
-    char gps_in[512];
-    for (int y=0; y < 512; ++y) {
+    char gps_in[1024];
+    for (int y=0; y < 1024; ++y) {
         gps_in[y] = '\0';
     }
+    strcpy(gps_in, at_url_param);
+    debug("this is url string");
+    debug(gps_in);
+    sim_808.write("at+cgnsinf\n");
+    delay(1000);
+    
 
     if (sim_808.available()) {
-        int x = 0;
+        int x = strlen(gps_in)-1;
+        debug("String length is " + String(x));
         while (sim_808.available()) {
-            char c = sim_808.read();a
-            if (!isspace(c)) {
+            unsigned char c = sim_808.read();
+            if ((c != '\n') && (!isspace(c))) {
                 gps_in[x++] = c;
+                flash_pin(L_YEL);
             }
-            flash_pin(L_YEL);
         }
+        gps_in[x++] = '\"';
+        gps_in[x] = '\n';
     }
-    url.concat(gps_in);
+    debug("this is url string after");
+    debug(gps_in);
+    int byte_counter = 0;
+    for (int y=0; (y < 1024) && (gps_in[y] != '\0'); ++y) {
+        sim_808.write(gps_in[y]);
+        byte_counter = y;
+    }
+    sim_808.write("\n");
+    delay(3000);
     
-    write_at_command("at+httppara=\"URL\",\"" + url + "\"");
+    signal_finish_setup();   
+    read_sim808();
+    debug("This is how many bytes were actually written: " + String(byte_counter));
+    debug("This is how many bytes are in gps in: " + String(strlen(gps_in)));
+    signal_finish_setup();   
     write_at_command("at+httppara=\"CID\",1");
-    write_at_command("at+httpssl=1");
-    write_at_command_c(at_https_request);
-    write_at_command("at+httpaction=1");
+    delay(1000);
+    write_at_command("at+httpaction=0");
 
 
 
@@ -171,8 +190,9 @@ void write_at_command_c(char * at_command) {
     delay(500);
     flash_pin(L_RED);
     sim_808.write(at_command);
-    delay(500);
-    read_sim808();
+    delay(1500);
+    sim_808.write("\n");
+
 }
 
 
