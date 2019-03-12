@@ -74,15 +74,24 @@ void loop()
     // Send GPS at command    
     write_at_command("at+cgnsinf");
     
+    char gps_in[512];
+    for (int y=0; y < 512; ++y) {
+        gps_in[y] = '\0';
+    }
+
     if (sim_808.available()) {
         int x = 0;
         while (sim_808.available()) {
-            // READ GPS DATA HERE
-        
-
+            char c = sim_808.read();a
+            if (!isspace(c)) {
+                gps_in[x++] = c;
+            }
             flash_pin(L_YEL);
         }
     }
+    url.concat(gps_in);
+    
+    write_at_command("at+httppara=\"URL\",\"" + url + "\"");
     write_at_command("at+httppara=\"CID\",1");
     write_at_command("at+httpssl=1");
     write_at_command_c(at_https_request);
