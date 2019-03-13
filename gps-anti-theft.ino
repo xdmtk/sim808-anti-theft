@@ -61,7 +61,6 @@ void setup()
     write_at_command("at+sapbr=3,1,\"APN\",\"wholesale\"");
     write_at_command("at+sapbr=1,1");
     write_at_command("at+sapbr=2,1");
-    write_at_command("at+httpinit");
    
     // Flash LED's to signal setup completion
     //signal_finish_setup();    
@@ -71,69 +70,98 @@ void setup()
 
 void loop()
 {
-    // Send GPS at command    
-    
     char gps_in[1024];
     for (int y=0; y < 1024; ++y) {
         gps_in[y] = '\0';
     }
     strcpy(gps_in, at_url_param);
-    debug("this is url string");
-    debug(gps_in);
-    sim_808.write("at+cgnsinf\n");
-    delay(1000);
-    
 
+    char * at_init = "at+httpinit\n";
+    char * at_gps = "at+cgnsinf\n";
+    char * at_cid = "at+httppara=\"CID\",1\n";
+    char * at_action = "at+httpaction=0\n";
+    char * at_read = "at+httpread\n";
+    char * at_term = "at+httpterm\n";
+
+    // Send HTTP INIT
+    sim_808.write(at_init);
+    delay(1000);
+    read_sim808();
+
+    // Send GPS instruction
+    sim_808.write(at_gps);
+    delay(1000);
+   
+    // Read GPS response 
     if (sim_808.available()) {
+
+        // Start entering response after data parameter in URL
         int x = strlen(gps_in)-1;
-        debug("String length is " + String(x));
         while (sim_808.available()) {
             unsigned char c = sim_808.read();
             if ((c != '\n') && (!isspace(c))) {
                 gps_in[x++] = c;
                 flash_pin(L_YEL);
+                Serial.write(c);
             }
         }
+        // Close the at string and flush command
         gps_in[x++] = '\"';
         gps_in[x] = '\n';
+        Serial.write("\n");
     }
-    debug("this is url string after");
-    debug(gps_in);
-    int byte_counter = 0;
-    for (int y=0; (y < 1024) && (gps_in[y] != '\0'); ++y) {
+   
+    // Send CID parameter
+    sim_808.write(at_cid);
+    delay(1000);
+    read_sim808();
+    
+    // Send URL parametr
+    for (int y=0; y < 1024; ++y) {
+        if (gps_in[y] == '\n') {
+            break;
+        }
+        Serial.write(gps_in[y]);
         sim_808.write(gps_in[y]);
-        byte_counter = y;
     }
+    Serial.write("\n");
     sim_808.write("\n");
     delay(3000);
-    
-    signal_finish_setup();   
+  
+    debug("About to read response from URL param send");
+    // Read response from URL parameter
+    sim_808.write("\n");
     read_sim808();
-    debug("This is how many bytes were actually written: " + String(byte_counter));
-    debug("This is how many bytes are in gps in: " + String(strlen(gps_in)));
-    signal_finish_setup();   
-    write_at_command("at+httppara=\"CID\",1");
+
+    // Send ACTION Parameter 
+    delay(3000);
+    sim_808.write(at_action);
     delay(1000);
-    write_at_command("at+httpaction=0");
-
-
+    read_sim808();
 
     // Wait for server response, then read reply
     delay(3000);
-    write_at_command("at+httpread");
+    sim_808.write(at_read);
+    delay(1000);
+    read_sim808();
+
 
     // TODO: Add logic to check for HTTP status 
     debug("Successfully deployed request");
 
     // Terminate HTTP context
-    write_at_command("at+httpterm");
+    sim_808.write(at_term);
+    delay(1000);
+    read_sim808();
     delay(5000);
     
 }
 
 
 void debug(String log) {
+    delay(500);
     Serial.println(log);
+    delay(500);
 }
 
 
@@ -173,6 +201,7 @@ void read_sim808() {
         Serial.write(sim_808.read());
         flash_pin(L_YEL);
     }
+    delay(1500);
 }
 
 
