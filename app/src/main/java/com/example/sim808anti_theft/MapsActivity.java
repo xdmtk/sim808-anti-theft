@@ -10,13 +10,18 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/coords.txt";
-
+    private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
+    private String XDMTK_API_KEY = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,9 +45,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
         mMap = googleMap;
-
-
 
         // Add a marker in Sydney and move the cameraV
         LatLng bikeLocation = new LatLng(-34, 151);
@@ -50,19 +54,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
     }
 
-    public BikeCoordinates getCoordinates() {
-
-        // TODO
-
-    }
 
 
-    public String getCoordinateString() {
+    public String getCoordinateString() throws IOException {
+
         URL url = new URL(COORDINATE_ENDPOINT);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
 
-
-
-
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuffer content = new StringBuffer();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        System.out.println("Response content: " + content.toString());
+        return content.toString();
     }
 
     public static class BikeCoordinates {
