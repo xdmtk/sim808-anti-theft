@@ -10,9 +10,13 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.net.HttpURLConnection;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/coords.txt";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,4 +49,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.addMarker(new MarkerOptions().position(bikeLocation).title("Current Bike Location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
     }
+
+    public BikeCoordinates getCoordinates() {
+
+        // TODO
+
+    }
+
+
+    public String getCoordinateString() {
+        URL url = new URL(COORDINATE_ENDPOINT);
+
+
+
+
+    }
+
+    public static class BikeCoordinates {
+        double latitude;
+        double longitude;
+    }
+
 }
