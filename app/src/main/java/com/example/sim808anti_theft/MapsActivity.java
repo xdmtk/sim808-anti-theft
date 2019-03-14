@@ -10,6 +10,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -45,8 +46,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
         mMap = googleMap;
+        BikeCoordinates bikeCoord = new BikeCoordinates();
+        bikeCoord.start();
 
         // Add a marker in Sydney and move the cameraV
         LatLng bikeLocation = new LatLng(-34, 151);
@@ -56,25 +58,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    public String getCoordinateString() throws IOException {
 
-        URL url = new URL(COORDINATE_ENDPOINT);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
+    public static class BikeCoordinates extends Thread{
 
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer content = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-            content.append(inputLine);
+        public void run() {
+            try {
+                getCoordinateString();
+            }
+            catch (Exception e) {
+                System.out.println(e.toString());
+            }
         }
-        in.close();
-        System.out.println("Response content: " + content.toString());
-        return content.toString();
-    }
 
-    public static class BikeCoordinates {
+        public String getCoordinateString() throws IOException {
+
+            URL url = new URL(COORDINATE_ENDPOINT);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer content = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+            in.close();
+            System.out.println("Response content: " + content.toString());
+            return content.toString();
+        }
         double latitude;
         double longitude;
     }
