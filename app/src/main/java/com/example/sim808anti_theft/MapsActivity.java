@@ -58,7 +58,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    public static class BikeCoordinates extends Thread{
+    public class BikeCoordinates extends Thread{
 
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
         private String coordinateString;
@@ -94,9 +94,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         // Bad GPS string handle
 
                     }
-
-
-
                 }
             }
         }
