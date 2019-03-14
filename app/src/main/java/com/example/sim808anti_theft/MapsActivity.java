@@ -68,33 +68,73 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         public void run() {
             try {
+
+                // Make HTTP request to get latest GPS string
                 this.coordinateString = getCoordinateString();
             }
             catch (Exception e) {
                 System.out.println(e.toString());
+            }
+            finally {
+
+                // On good GPS data
+                if (this.coordinateString.length() > 0) {
+
+                    // Split the GPS string and parse
+                    String[] coordinates = coordinateString.substring(
+                            coordinateString.indexOf(":")).split(",");
+
+                    // For warmed up GPS coords, split by comma should only have 5 values
+                    if (coordinates.length <= 5) {
+                        this.latitude = Double.valueOf(coordinates[3]);
+                        this.longitude = Double.valueOf(coordinates[4]);
+                    }
+                    // For more than 5 comma values, bad GPS ( non warmed up ) data
+                    else {
+                        // Bad GPS string handle
+
+                    }
+
+
+
+                }
             }
         }
 
 
         public String getCoordinateString() throws IOException {
 
+            // Setup HTTP context
             URL url = new URL(COORDINATE_ENDPOINT);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
 
+            // Connect and get status
             con.connect();
             int status = con.getResponseCode();
 
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer content = new StringBuffer();
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
+            if (status < 299) {
+
+                // Read HTTP response data
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(con.getInputStream()));
+
+                // Build the buffer 'content' with successive reads on
+                // the InputStreamReader 'in'
+                String inputLine;
+                StringBuffer content = new StringBuffer();
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+
+                // When finished, close reader and return response
+                in.close();
+                System.out.println("Response content: " + content.toString());
+                return content.toString();
             }
-            in.close();
-            System.out.println("Response content: " + content.toString());
-            return content.toString();
+            else {
+                return "Bad request";
+            }
         }
     }
 
