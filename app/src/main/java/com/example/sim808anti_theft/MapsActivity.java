@@ -60,15 +60,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public static class BikeCoordinates extends Thread{
 
-        private String COORDINATE_ENDPOINT = "http://xdmtk.org";
+        private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
+        private String coordinateString;
+
+        double latitude;
+        double longitude;
+
         public void run() {
             try {
-                getCoordinateString();
+                this.coordinateString = getCoordinateString();
             }
             catch (Exception e) {
                 System.out.println(e.toString());
             }
         }
+
 
         public String getCoordinateString() throws IOException {
 
@@ -90,8 +96,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             System.out.println("Response content: " + content.toString());
             return content.toString();
         }
-        double latitude;
-        double longitude;
     }
 
 }
