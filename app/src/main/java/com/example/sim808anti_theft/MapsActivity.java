@@ -21,7 +21,6 @@ import java.net.URL;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
     private String XDMTK_API_KEY = "";
 
     @Override
@@ -61,6 +60,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public static class BikeCoordinates extends Thread{
 
+        private String COORDINATE_ENDPOINT = "http://xdmtk.org";
         public void run() {
             try {
                 getCoordinateString();
@@ -75,6 +75,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             URL url = new URL(COORDINATE_ENDPOINT);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
+
+            con.connect();
+            int status = con.getResponseCode();
 
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(con.getInputStream()));
