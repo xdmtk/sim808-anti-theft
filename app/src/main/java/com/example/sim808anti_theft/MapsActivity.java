@@ -18,6 +18,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -49,25 +50,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        BikeCoordinates bikeCoord = new BikeCoordinates();
+        BikeCoordinates bikeCoord = new BikeCoordinates(mMap);
         bikeCoord.start();
-
-        while (true) {
-
-            if (bikeCoord.longitude != 0 && bikeCoord.latitude != 0 ) {
-
-                LatLng bikeLocation = new LatLng(bikeCoord.latitude, bikeCoord.longitude);
-                mMap.addMarker(new MarkerOptions().position(bikeLocation).title("Current Bike Location"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
-            }
-            try {
-
-                Thread.sleep(3000);
-            }
-            catch (Exception e) {
-                System.out.println(e);
-            }
-        }
     }
 
 
@@ -77,33 +61,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public class BikeCoordinates extends Thread{
 
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
-        private String coordinateString;
+        public GoogleMap myMap;
+        public String coordinateString;
 
-        double latitude;
-        double longitude;
+
+        public BikeCoordinates(GoogleMap m) {
+            this.myMap = m;
+
+        }
+
 
         public void run() {
             try {
-
-                // Make HTTP request to get latest GPS string
-                this.coordinateString = getCoordinateString();
+                coordinateString = getCoordinateString();
             }
             catch (Exception e) {
-                System.out.println(e.toString());
+                System.out.println(e);
             }
             finally {
+                while (true) {
+                    runOnUiThread(new Runnable() {
+                        double latitude;
+                        double longitude;
 
-                // On good GPS data
-                if (this.coordinateString.length() > 0) {
+                        @Override
+                        public void run() {
+                            // On good GPS data
+                            if (coordinateString != null && coordinateString.length() > 0) {
 
-                    // Split the GPS string and parse
-                    String[] coordinates = coordinateString.substring(
-                            coordinateString.indexOf(":")).split(",");
+                                // Split the GPS string and parse
+                                String[] coordinates = coordinateString.substring(
+                                        coordinateString.indexOf(":")).split(",");
 
-                    // For warmed up GPS coords, split by comma should only have 5 values
-                    if (coordinates.length <= 5) {
-                        this.latitude = Double.valueOf(coordinates[3]);
-                        this.longitude = Double.valueOf(coordinates[4]);
+                                // For warmed up GPS coords, split by comma should only have 5 values
+                                if (coordinates.length <= 5) {
+                                    LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
+                                    myMap.addMarker(new MarkerOptions().position(currentCoordinates).title("Fooo"));
+                                    mMap.moveCamera(CameraUpdateFactory.newLatLng(currentCoordinates));
+                                }
+                            }
+                        }
+                    });
+                    try {
+                        Thread.sleep(3000);
+                    }
+                    catch (Exception e) {
+                        System.out.print(e);
                     }
                 }
             }
