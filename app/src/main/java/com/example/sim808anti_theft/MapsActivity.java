@@ -10,18 +10,21 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
     private String XDMTK_API_KEY = "";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,38 +48,105 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the cameraV
-        LatLng bikeLocation = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(bikeLocation).title("Current Bike Location"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
+        BikeCoordinates bikeCoord = new BikeCoordinates(mMap);
+        bikeCoord.start();
     }
 
 
 
-    public String getCoordinateString() throws IOException {
 
-        URL url = new URL(COORDINATE_ENDPOINT);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
 
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer content = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-            content.append(inputLine);
+    public class BikeCoordinates extends Thread{
+
+        private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
+        public GoogleMap myMap;
+        public String coordinateString;
+
+
+        public BikeCoordinates(GoogleMap m) {
+            this.myMap = m;
+
         }
-        in.close();
-        System.out.println("Response content: " + content.toString());
-        return content.toString();
-    }
 
-    public static class BikeCoordinates {
-        double latitude;
-        double longitude;
+
+        public void run() {
+            try {
+                coordinateString = getCoordinateString();
+            }
+            catch (Exception e) {
+                System.out.println(e);
+            }
+            finally {
+                while (true) {
+                    runOnUiThread(new Runnable() {
+                        double latitude;
+                        double longitude;
+
+                        @Override
+                        public void run() {
+                            // On good GPS data
+                            if (coordinateString != null && coordinateString.length() > 0) {
+
+                                // Split the GPS string and parse
+                                String[] coordinates = coordinateString.substring(
+                                        coordinateString.indexOf(":")).split(",");
+
+                                // For warmed up GPS coords, split by comma should only have 5 values
+                                if (coordinates.length <= 5) {
+                                    LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
+                                    myMap.addMarker(new MarkerOptions().position(currentCoordinates).title("Fooo"));
+                                    mMap.moveCamera(CameraUpdateFactory.newLatLng(currentCoordinates));
+                                }
+                            }
+                        }
+                    });
+                    try {
+                        Thread.sleep(3000);
+                    }
+                    catch (Exception e) {
+                        System.out.print(e);
+                    }
+                }
+            }
+        }
+
+
+        public String getCoordinateString() throws IOException {
+
+            // Setup HTTP context
+            URL url = new URL(COORDINATE_ENDPOINT);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+
+            // Connect and get status
+            con.connect();
+            int status = con.getResponseCode();
+
+            if (status < 299) {
+
+                // Read HTTP response data
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(con.getInputStream()));
+
+                // Build the buffer 'content' with successive reads on
+                // the InputStreamReader 'in'
+                String inputLine;
+                StringBuffer content = new StringBuffer();
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+
+                // When finished, close reader and return response
+                in.close();
+                System.out.println("Response content: " + content.toString());
+                return content.toString();
+            }
+            else {
+                return "Bad request";
+            }
+        }
     }
 
 }
