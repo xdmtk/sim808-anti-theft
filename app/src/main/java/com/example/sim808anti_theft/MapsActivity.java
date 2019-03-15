@@ -23,7 +23,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private String XDMTK_API_KEY = "";
-    public Queue<Pair> coordPairQueue;
 
 
     @Override
@@ -53,22 +52,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         BikeCoordinates bikeCoord = new BikeCoordinates();
         bikeCoord.start();
 
-        // Add a marker in Sydney and move the cameraV
-        LatLng bikeLocation = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(bikeLocation).title("Current Bike Location"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
-    }
+        while (true) {
 
+            if (bikeCoord.longitude != 0 && bikeCoord.latitude != 0 ) {
 
-    public class Pair {
-        double latitude;
-        double longitude;
+                LatLng bikeLocation = new LatLng(bikeCoord.latitude, bikeCoord.longitude);
+                mMap.addMarker(new MarkerOptions().position(bikeLocation).title("Current Bike Location"));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
+            }
+            try {
 
-        public Pair(double lat, double lon) {
-            lat = this.latitude;
-            lon = this.longitude;
+                Thread.sleep(3000);
+            }
+            catch (Exception e) {
+                System.out.println(e);
+            }
         }
     }
+
+
 
 
 
@@ -102,9 +104,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (coordinates.length <= 5) {
                         this.latitude = Double.valueOf(coordinates[3]);
                         this.longitude = Double.valueOf(coordinates[4]);
-
-                        Pair currentCoordinates = new Pair(this.latitude, this.longitude);
-                        coordPairQueue.add(currentCoordinates);
                     }
                 }
             }
