@@ -17,11 +17,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Queue;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private String XDMTK_API_KEY = "";
+    public Queue<Pair> coordPairQueue;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
         BikeCoordinates bikeCoord = new BikeCoordinates();
         bikeCoord.start();
 
@@ -55,6 +59,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.moveCamera(CameraUpdateFactory.newLatLng(bikeLocation));
     }
 
+
+    public class Pair {
+        double latitude;
+        double longitude;
+
+        public Pair(double lat, double lon) {
+            lat = this.latitude;
+            lon = this.longitude;
+        }
+    }
 
 
 
@@ -88,11 +102,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (coordinates.length <= 5) {
                         this.latitude = Double.valueOf(coordinates[3]);
                         this.longitude = Double.valueOf(coordinates[4]);
-                    }
-                    // For more than 5 comma values, bad GPS ( non warmed up ) data
-                    else {
-                        // Bad GPS string handle
 
+                        Pair currentCoordinates = new Pair(this.latitude, this.longitude);
+                        coordPairQueue.add(currentCoordinates);
                     }
                 }
             }
