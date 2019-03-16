@@ -71,6 +71,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
+        private void moveToCurrentLocation(GoogleMap myMapP, LatLng currentLocation)
+        {
+            myMapP.addMarker(new MarkerOptions().position(currentLocation).title("Current Bike Location"));
+            myMapP.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
+            // Zoom in, animating the camera.
+            myMapP.animateCamera(CameraUpdateFactory.zoomIn());
+            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
+            myMapP.animateCamera(CameraUpdateFactory.zoomTo(15), 2000, null);
+
+
+        }
+
         public void run() {
             try {
                 coordinateString = getCoordinateString();
@@ -93,11 +105,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 String[] coordinates = coordinateString.substring(
                                         coordinateString.indexOf(":")).split(",");
 
-                                // For warmed up GPS coords, split by comma should only have 5 values
+                                // For warmed up GPS coordinates, split by comma should only have 5 values
                                 if (coordinates.length <= 5) {
                                     LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
-                                    myMap.addMarker(new MarkerOptions().position(currentCoordinates).title("Fooo"));
-                                    mMap.moveCamera(CameraUpdateFactory.newLatLng(currentCoordinates));
+                                    moveToCurrentLocation(myMap, currentCoordinates);
                                 }
                             }
                         }
