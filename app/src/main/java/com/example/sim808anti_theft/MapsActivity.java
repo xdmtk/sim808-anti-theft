@@ -2,6 +2,7 @@ package com.example.sim808anti_theft;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -66,6 +67,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public String coordinateString;
         public String requestString;
         public String lastRequestString = "";
+        public TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
 
 
         public BikeCoordinates(GoogleMap m) {
@@ -115,6 +117,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     }
                                 }
                                 lastRequestString = requestString;
+                                String updatedTextSlice = requestString.split("-")[0].substring(8);
+                                lastUpdatedText.setText("Last Updated: " + updatedTextSlice);
                             }
 
                         }
