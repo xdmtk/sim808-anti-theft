@@ -66,9 +66,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public class BikeCoordinates extends Thread implements GoogleMap.OnCameraMoveStartedListener{
 
+        // API endpoints
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
         private String REQUEST_ENDPOINT = "http://api.xdmtk.org/?requests=1";
+
+        // Google map object
         private GoogleMap myMap;
+
+        // Coordinate strings
         private String coordinateString;
         private String requestString;
         private String lastRequestString = "";
@@ -82,19 +87,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         public BikeCoordinates(GoogleMap m) {
+
+            // Setup map event listeners
             this.myMap = m;
             m.setOnCameraMoveStartedListener(this);
 
+
+            // Setup button event listeners
             final Button recenter = findViewById(R.id.recenter);
             recenter.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     moveToCurrentLocation(myMap, new LatLng(lat,lon));
+                    cameraMoveLock = false;
                 }
             });
-
-            final Toolbar toolbar = findViewById(R.id.toolbar);
-            toolbar.setTitle("SIM808 Anti-Theft");
 
             final Button lock = findViewById(R.id.lock);
             lock.setOnClickListener(new View.OnClickListener() {
@@ -111,35 +118,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             });
 
+
+            // Give title to app toolbar
+            final Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setTitle("SIM808 Anti-Theft");
+
         }
 
+
+        // Disable automatic move to bike coordinates if map is manually moved
         @Override
         public void onCameraMoveStarted(int reason) {
             this.cameraMoveLock = true;
         }
 
+        // Function to animate map and add marker
         private void moveToCurrentLocation(GoogleMap myMapP, LatLng currentLocation)
         {
             myMapP.addMarker(new MarkerOptions().position(currentLocation).title("Current Bike Location"));
             myMapP.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
         }
 
+        // Called on Thread start
         public void run() {
+
+
+            // Repeats update process indefinitely
             while (true) {
                 try {
+
+                    // Fetch the coordinate strings and request history from API
                     coordinateString = getAccessCoordinates("Coordinates");
                     requestString = getAccessCoordinates("Requests");
                 } catch (Exception e) {
                     System.out.println(e);
                 } finally {
+
+                    // When data is fetched, update UI with coordinate data and request data
                     runOnUiThread(new Runnable() {
 
                         @Override
                         public void run() {
 
+                            // Only update if fetched coordinates are a new update from SIM808
                             if (lastRequestString.equals("") || !requestString.equals(lastRequestString)) {
 
-                                // On good GPS data
+                                // On good GPS data continue with parsing
                                 if (coordinateString != null && coordinateString.length() > 0) {
 
                                     // Split the GPS string and parse
@@ -152,12 +176,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         lon = Double.valueOf(coordinates[4]);
 
                                         LatLng currentCoordinates = new LatLng(lat,lon);
+
+                                        // Move camera if no manual movement
                                         if (!cameraMoveLock) {
                                             moveToCurrentLocation(myMap, currentCoordinates);
                                         }
                                     }
                                 }
+
+                                // Reset new request string
                                 lastRequestString = requestString;
+
+                                // Show update string
                                 String updatedTextSlice = requestString.split("-")[0].substring(8);
                                 lastUpdatedText.setText("Last Updated: " + updatedTextSlice);
                             }
@@ -165,6 +195,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     });
                     try {
+
+
+                        // Setup new thread to update UI with update counter
                         new Thread() {
                             public void run() {
                                 // Start update countdown
@@ -184,6 +217,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 };
                             }
                         }.start();
+
+                        // Pause main (sub) thread execution for interval timer specification
                         Thread.sleep(UPDATE_INTERVAL*1000);
                     } catch (Exception e) {
                         System.out.print(e);
