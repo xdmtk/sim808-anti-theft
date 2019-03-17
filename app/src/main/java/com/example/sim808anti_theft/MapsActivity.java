@@ -83,6 +83,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public boolean theftLock = false;
         private double lat;
         private double lon;
+        private double lat_lock;
+        private double lon_lock;
 
 
 
@@ -110,6 +112,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if (!theftLock) {
                         theftLock = true;
                         lock.setText("Unlock");
+                        setGPSLock(lat,lon);
+
                     }
                     else {
                         theftLock = false;
@@ -175,6 +179,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         lat = Double.valueOf(coordinates[3]);
                                         lon = Double.valueOf(coordinates[4]);
 
+                                        // Main anti-theft action -> Determine whether GPS coordinates
+                                        // have moved outside of defined radius
+                                        if (theftLock) {
+
+                                            // If checkLockRadius returns true, send push notification
+                                            // to alert of unauthorized movement
+                                            if (checkLockRadius(lat, lon)) {
+
+
+
+                                            }
+                                        }
+
                                         LatLng currentCoordinates = new LatLng(lat,lon);
 
                                         // Move camera if no manual movement
@@ -225,6 +242,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                 }
             }
+        }
+
+        // On lock button press, save last GPS coordinates to lock on
+        private void setGPSLock(double latitude, double longitude) {
+            lat_lock = latitude;
+            lon_lock = longitude;
+        }
+
+
+
+        // If theftLock is set, for each new update, call this function to determine whether
+        // GPS coordinates are moving outside defined lock radius
+        private boolean checkLockRadius(double latitude, double longtidue) {
+
+
+
+
         }
 
 
