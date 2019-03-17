@@ -1,10 +1,17 @@
 package com.example.sim808anti_theft;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.os.Build;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -56,8 +63,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        bikeCoord = new BikeCoordinates(mMap);
+        bikeCoord = new BikeCoordinates(mMap, this);
         bikeCoord.start();
+
+    }
+
+    private void sendUrgentNotification() {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "bike_channel")
+                    .setSmallIcon(R.drawable.ic_baseline_report_problem_24px)
+                .setContentTitle("hello")
+                .setContentText("testing")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        mNotificationManager.notify(001, builder.build());
 
     }
 
@@ -94,7 +114,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-        public BikeCoordinates(GoogleMap m) {
+        public BikeCoordinates(GoogleMap m, MapsActivity mainobject) {
 
             // Setup map event listeners
             this.myMap = m;
@@ -155,6 +175,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Called on Thread start
         public void run() {
 
+            // Create the NotificationChannel, but only on API 26+ because
+            // the NotificationChannel class is new and not in the support library
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                CharSequence name = "Bike Channel";
+                String description = "Notifications to signal bike coordinate updates";
+                int importance = NotificationManager.IMPORTANCE_DEFAULT;
+                NotificationChannel channel = new NotificationChannel("bike_channel", name, importance);
+                channel.setDescription(description);
+                // Register the channel with the system; you can't change the importance
+                // or other notification behaviors after this
+                NotificationManager notificationManager = getSystemService(NotificationManager.class);
+                notificationManager.createNotificationChannel(channel);
+            }
+
+            sendUrgentNotification();
+
 
             // Repeats update process indefinitely
             while (true) {
@@ -195,7 +231,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                             // If checkLockRadius returns true, send push notification
                                             // to alert of unauthorized movement
                                             if (checkLockRadius(lat, lon)) {
-                                                System.out.println("Foo");
+
+
+
                                             }
                                         }
 
@@ -252,6 +290,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
         }
+
+
 
         // On lock button press, save last GPS coordinates to lock on
         private void setGPSLock(double latitude, double longitude) {
