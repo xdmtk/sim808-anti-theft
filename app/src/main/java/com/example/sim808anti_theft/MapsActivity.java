@@ -27,7 +27,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private String XDMTK_API_KEY = "";
-
+    public BikeCoordinates bikeCoord;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,31 +53,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        BikeCoordinates bikeCoord = new BikeCoordinates(mMap);
+        bikeCoord = new BikeCoordinates(mMap);
         bikeCoord.start();
     }
 
 
 
 
-
-    public class BikeCoordinates extends Thread{
+    public class BikeCoordinates extends Thread implements GoogleMap.OnCameraMoveStartedListener {
 
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
         private String REQUEST_ENDPOINT = "http://api.xdmtk.org/?requests=1";
-        public GoogleMap myMap;
-        public String coordinateString;
-        public String requestString;
-        public String lastRequestString = "";
-        public TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
-        public int UPDATE_INTERVAL = 25;
+        private GoogleMap myMap;
+        private String coordinateString;
+        private String requestString;
+        private String lastRequestString = "";
+        private TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
+        private int UPDATE_INTERVAL = 25;
+        public boolean cameraMoveLock = false;
 
 
         public BikeCoordinates(GoogleMap m) {
             this.myMap = m;
+            m.setOnCameraMoveStartedListener(this);
 
         }
 
+        @Override
+        public void onCameraMoveStarted(int reason) {
+            this.cameraMoveLock = true;
+        }
 
         private void moveToCurrentLocation(GoogleMap myMapP, LatLng currentLocation)
         {
@@ -116,7 +121,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                     // For warmed up GPS coordinates, split by comma should only have 5 values
                                     if (coordinates.length <= 5) {
                                         LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
-                                        moveToCurrentLocation(myMap, currentCoordinates);
+                                        if (!cameraMoveLock) {
+                                            moveToCurrentLocation(myMap, currentCoordinates);
+                                        }
                                     }
                                 }
                                 lastRequestString = requestString;
@@ -155,7 +162,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
-        public String getAccessCoordinates(String mode) throws IOException {
+        private String getAccessCoordinates(String mode) throws IOException {
 
             URL url;
             // Setup HTTP context
