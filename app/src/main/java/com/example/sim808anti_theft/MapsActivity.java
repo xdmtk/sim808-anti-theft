@@ -130,27 +130,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         new Thread() {
                             public void run() {
                                 // Start update countdown
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        TextView updateTimerText = (TextView) findViewById(R.id.update_timer);
-                                        int seconds = UPDATE_INTERVAL;
+                                TextView updateTimerText = (TextView) findViewById(R.id.update_timer);
+                                int seconds = UPDATE_INTERVAL;
 
-                                        while (seconds > 0) {
-                                            String updateTextSet = "  Next Update: " + seconds + " seconds";
-                                            updateTimerText.setText(updateTextSet);
-                                            seconds--;
-                                            try {
-                                                Thread.sleep(1000);
-                                            }
-                                            catch (Exception e){
-                                                System.out.print(e);
-                                            }
-                                        }
+                                while (seconds > 0) {
+                                    String updateTextSet = "Next Update: " + seconds + " seconds";
+                                    updateTimerText.setText(updateTextSet);
+                                    seconds--;
+                                    try {
+                                        Thread.sleep(1000);
                                     }
-                                });
+                                    catch (Exception e){
+                                        System.out.print(e);
+                                    }
+                                };
                             }
-                        };
+                        }.start();
                         Thread.sleep(UPDATE_INTERVAL*1000);
                     } catch (Exception e) {
                         System.out.print(e);
