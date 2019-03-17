@@ -11,6 +11,8 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.w3c.dom.Text;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.BufferedReader;
@@ -68,6 +70,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public String requestString;
         public String lastRequestString = "";
         public TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
+        public int UPDATE_INTERVAL = 25;
 
 
         public BikeCoordinates(GoogleMap m) {
@@ -124,6 +127,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         }
                     });
                     try {
+                        new Thread() {
+                            public void run() {
+                                // Start update countdown
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        TextView updateTimerText = (TextView) findViewById(R.id.update_timer);
+                                        int seconds = UPDATE_INTERVAL;
+
+                                        while (seconds) {
+
+
+                                        }
+                                    }
+                                });
+                            }
+                        };
                         Thread.sleep(3000);
                     } catch (Exception e) {
                         System.out.print(e);
