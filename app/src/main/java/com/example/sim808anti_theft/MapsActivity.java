@@ -2,6 +2,7 @@ package com.example.sim808anti_theft;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -74,6 +75,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
         private int UPDATE_INTERVAL = 25;
         public boolean cameraMoveLock = false;
+        public boolean theftLock = false;
         private double lat;
         private double lon;
 
@@ -88,6 +90,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 @Override
                 public void onClick(View v) {
                     moveToCurrentLocation(myMap, new LatLng(lat,lon));
+                }
+            });
+
+            final Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setTitle("SIM808 Anti-Theft");
+
+            final Button lock = findViewById(R.id.lock);
+            lock.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (!theftLock) {
+                        theftLock = true;
+                        lock.setText("Unlock");
+                    }
+                    else {
+                        theftLock = false;
+                        lock.setText("Lock");
+                    }
                 }
             });
 
