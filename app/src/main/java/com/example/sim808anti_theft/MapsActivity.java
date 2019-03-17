@@ -68,12 +68,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void sendUrgentNotification() {
+    private void sendUrgentNotification(String title, String description) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "bike_channel")
                     .setSmallIcon(R.drawable.ic_baseline_report_problem_24px)
-                .setContentTitle("hello")
-                .setContentText("testing")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setContentTitle(title)
+                .setContentText(description)
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -189,7 +189,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 notificationManager.createNotificationChannel(channel);
             }
 
-            sendUrgentNotification();
 
 
             // Repeats update process indefinitely
@@ -232,8 +231,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                             // to alert of unauthorized movement
                                             if (checkLockRadius(lat, lon)) {
 
-
-
+                                                sendUrgentNotification("Bike Moving!", "Your locked motorcycle is moving"
+                                                + " outside of the lock radius!");
                                             }
                                         }
 
