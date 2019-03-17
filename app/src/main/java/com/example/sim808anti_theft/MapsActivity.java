@@ -79,12 +79,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private String lastRequestString = "";
         private TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
         private int UPDATE_INTERVAL = 25;
+
+        // In meters
+        private int LOCK_RADIUS = 15;
+
+        public boolean firstRun = true;
         public boolean cameraMoveLock = false;
         public boolean theftLock = false;
         private double lat;
         private double lon;
         private double lat_lock;
         private double lon_lock;
+
 
 
 
@@ -133,13 +139,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Disable automatic move to bike coordinates if map is manually moved
         @Override
         public void onCameraMoveStarted(int reason) {
+            if (firstRun) {
+                firstRun = false;
+                return;
+            }
             this.cameraMoveLock = true;
         }
 
         // Function to animate map and add marker
         private void moveToCurrentLocation(GoogleMap myMapP, LatLng currentLocation)
         {
-            myMapP.addMarker(new MarkerOptions().position(currentLocation).title("Current Bike Location"));
             myMapP.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
         }
 
@@ -186,13 +195,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                             // If checkLockRadius returns true, send push notification
                                             // to alert of unauthorized movement
                                             if (checkLockRadius(lat, lon)) {
-
-
-
+                                                System.out.println("Foo");
                                             }
                                         }
 
                                         LatLng currentCoordinates = new LatLng(lat,lon);
+                                        myMap.clear();
+                                        myMap.addMarker(new MarkerOptions().position(currentCoordinates).title("Current Bike Location"));
 
                                         // Move camera if no manual movement
                                         if (!cameraMoveLock) {
@@ -255,10 +264,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // If theftLock is set, for each new update, call this function to determine whether
         // GPS coordinates are moving outside defined lock radius
         private boolean checkLockRadius(double latitude, double longtidue) {
+            double latMid, m_per_deg_lat, m_per_deg_lon, deltaLat, deltaLon,dist_m;
+
+            latMid = (lat+lat_lock)/2.0;  // or just use Lat1 for slightly less accurate estimate
 
 
+            m_per_deg_lat = 111132.954 - 559.822 * Math.cos( 2.0 * latMid ) + 1.175 * Math.cos( 4.0 * latMid);
+            m_per_deg_lon = (3.14159265359/180 ) * 6367449 * Math.cos ( latMid );
 
+            deltaLat = Math.abs(lat-lat_lock);
+            deltaLon = Math.abs(lon - lon_lock);
 
+            dist_m = Math.sqrt (  Math.pow( deltaLat * m_per_deg_lat,2) + Math.pow( deltaLon * m_per_deg_lon , 2) );
+            if (dist_m > LOCK_RADIUS) {
+                return true;
+            }
+            return false;
         }
 
 
