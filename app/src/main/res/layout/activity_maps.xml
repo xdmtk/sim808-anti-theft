@@ -15,7 +15,12 @@
     <TextView
         android:id="@+id/text_view"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="20dp"
         android:text="Last Updated: " />
 
+    <TextView
+        android:id="@+id/update_timer"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:text="  Next Update: " />
 </LinearLayout>

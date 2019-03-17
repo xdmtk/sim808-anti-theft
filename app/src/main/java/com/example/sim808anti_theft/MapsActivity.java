@@ -2,6 +2,7 @@ package com.example.sim808anti_theft;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -9,6 +10,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import org.w3c.dom.Text;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -61,8 +64,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public class BikeCoordinates extends Thread{
 
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
+        private String REQUEST_ENDPOINT = "http://api.xdmtk.org/?requests=1";
         public GoogleMap myMap;
         public String coordinateString;
+        public String requestString;
+        public String lastRequestString = "";
+        public TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
+        public int UPDATE_INTERVAL = 25;
 
 
         public BikeCoordinates(GoogleMap m) {
@@ -84,39 +92,62 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         public void run() {
-            try {
-                coordinateString = getCoordinateString();
-            }
-            catch (Exception e) {
-                System.out.println(e);
-            }
-            finally {
-                while (true) {
+            while (true) {
+                try {
+                    coordinateString = getAccessCoordinates("Coordinates");
+                    requestString = getAccessCoordinates("Requests");
+                } catch (Exception e) {
+                    System.out.println(e);
+                } finally {
                     runOnUiThread(new Runnable() {
-                        double latitude;
-                        double longitude;
 
                         @Override
                         public void run() {
-                            // On good GPS data
-                            if (coordinateString != null && coordinateString.length() > 0) {
 
-                                // Split the GPS string and parse
-                                String[] coordinates = coordinateString.substring(
-                                        coordinateString.indexOf(":")).split(",");
+                            if (lastRequestString.equals("") || !requestString.equals(lastRequestString)) {
 
-                                // For warmed up GPS coordinates, split by comma should only have 5 values
-                                if (coordinates.length <= 5) {
-                                    LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
-                                    moveToCurrentLocation(myMap, currentCoordinates);
+                                // On good GPS data
+                                if (coordinateString != null && coordinateString.length() > 0) {
+
+                                    // Split the GPS string and parse
+                                    String[] coordinates = coordinateString.substring(
+                                            coordinateString.indexOf(":")).split(",");
+
+                                    // For warmed up GPS coordinates, split by comma should only have 5 values
+                                    if (coordinates.length <= 5) {
+                                        LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
+                                        moveToCurrentLocation(myMap, currentCoordinates);
+                                    }
                                 }
+                                lastRequestString = requestString;
+                                String updatedTextSlice = requestString.split("-")[0].substring(8);
+                                lastUpdatedText.setText("Last Updated: " + updatedTextSlice);
                             }
+
                         }
                     });
                     try {
-                        Thread.sleep(3000);
-                    }
-                    catch (Exception e) {
+                        new Thread() {
+                            public void run() {
+                                // Start update countdown
+                                TextView updateTimerText = (TextView) findViewById(R.id.update_timer);
+                                int seconds = UPDATE_INTERVAL;
+
+                                while (seconds > 0) {
+                                    String updateTextSet = "Next Update: " + seconds + " seconds";
+                                    updateTimerText.setText(updateTextSet);
+                                    seconds--;
+                                    try {
+                                        Thread.sleep(1000);
+                                    }
+                                    catch (Exception e){
+                                        System.out.print(e);
+                                    }
+                                };
+                            }
+                        }.start();
+                        Thread.sleep(UPDATE_INTERVAL*1000);
+                    } catch (Exception e) {
                         System.out.print(e);
                     }
                 }
@@ -124,10 +155,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
-        public String getCoordinateString() throws IOException {
+        public String getAccessCoordinates(String mode) throws IOException {
 
+            URL url;
             // Setup HTTP context
-            URL url = new URL(COORDINATE_ENDPOINT);
+            if (mode == "Coordinates") {
+                url = new URL(COORDINATE_ENDPOINT);
+            }
+            else if (mode == "Requests") {
+                url = new URL(REQUEST_ENDPOINT);
+            }
+            else {
+                return "No mode";
+            }
+
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
 
@@ -158,6 +199,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return "Bad request";
             }
         }
+
+
+
     }
 
 }
