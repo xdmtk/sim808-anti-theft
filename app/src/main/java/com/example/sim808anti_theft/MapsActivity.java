@@ -2,6 +2,9 @@ package com.example.sim808anti_theft;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -27,7 +30,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private String XDMTK_API_KEY = "";
-
+    public BikeCoordinates bikeCoord;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,42 +56,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        BikeCoordinates bikeCoord = new BikeCoordinates(mMap);
+        bikeCoord = new BikeCoordinates(mMap);
         bikeCoord.start();
+
     }
 
 
 
 
-
-    public class BikeCoordinates extends Thread{
+    public class BikeCoordinates extends Thread implements GoogleMap.OnCameraMoveStartedListener{
 
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
         private String REQUEST_ENDPOINT = "http://api.xdmtk.org/?requests=1";
-        public GoogleMap myMap;
-        public String coordinateString;
-        public String requestString;
-        public String lastRequestString = "";
-        public TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
-        public int UPDATE_INTERVAL = 25;
+        private GoogleMap myMap;
+        private String coordinateString;
+        private String requestString;
+        private String lastRequestString = "";
+        private TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
+        private int UPDATE_INTERVAL = 25;
+        public boolean cameraMoveLock = false;
+        public boolean theftLock = false;
+        private double lat;
+        private double lon;
+
 
 
         public BikeCoordinates(GoogleMap m) {
             this.myMap = m;
+            m.setOnCameraMoveStartedListener(this);
+
+            final Button recenter = findViewById(R.id.recenter);
+            recenter.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    moveToCurrentLocation(myMap, new LatLng(lat,lon));
+                }
+            });
+
+            final Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setTitle("SIM808 Anti-Theft");
+
+            final Button lock = findViewById(R.id.lock);
+            lock.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (!theftLock) {
+                        theftLock = true;
+                        lock.setText("Unlock");
+                    }
+                    else {
+                        theftLock = false;
+                        lock.setText("Lock");
+                    }
+                }
+            });
 
         }
 
+        @Override
+        public void onCameraMoveStarted(int reason) {
+            this.cameraMoveLock = true;
+        }
 
         private void moveToCurrentLocation(GoogleMap myMapP, LatLng currentLocation)
         {
             myMapP.addMarker(new MarkerOptions().position(currentLocation).title("Current Bike Location"));
-            myMapP.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
-            // Zoom in, animating the camera.
-            myMapP.animateCamera(CameraUpdateFactory.zoomIn());
-            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
-            myMapP.animateCamera(CameraUpdateFactory.zoomTo(15), 2000, null);
-
-
+            myMapP.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
         }
 
         public void run() {
@@ -115,8 +148,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                                     // For warmed up GPS coordinates, split by comma should only have 5 values
                                     if (coordinates.length <= 5) {
-                                        LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
-                                        moveToCurrentLocation(myMap, currentCoordinates);
+                                        lat = Double.valueOf(coordinates[3]);
+                                        lon = Double.valueOf(coordinates[4]);
+
+                                        LatLng currentCoordinates = new LatLng(lat,lon);
+                                        if (!cameraMoveLock) {
+                                            moveToCurrentLocation(myMap, currentCoordinates);
+                                        }
                                     }
                                 }
                                 lastRequestString = requestString;
@@ -155,7 +193,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
-        public String getAccessCoordinates(String mode) throws IOException {
+        private String getAccessCoordinates(String mode) throws IOException {
 
             URL url;
             // Setup HTTP context

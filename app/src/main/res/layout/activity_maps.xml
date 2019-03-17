@@ -5,6 +5,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme"
+/>
+
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
@@ -22,5 +31,17 @@
         android:id="@+id/update_timer"
         android:layout_width="match_parent"
         android:layout_height="20dp"
-        android:text="  Next Update: " />
+        android:text="Next Update: " />
+
+    <Button
+        android:id="@+id/recenter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Re-center" />
+
+    <Button
+        android:id="@+id/lock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Lock" />
 </LinearLayout>
