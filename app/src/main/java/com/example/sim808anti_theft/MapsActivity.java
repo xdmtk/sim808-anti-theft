@@ -2,6 +2,8 @@ package com.example.sim808anti_theft;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -55,12 +57,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         bikeCoord = new BikeCoordinates(mMap);
         bikeCoord.start();
+
     }
 
 
 
 
-    public class BikeCoordinates extends Thread implements GoogleMap.OnCameraMoveStartedListener {
+    public class BikeCoordinates extends Thread implements GoogleMap.OnCameraMoveStartedListener{
 
         private String COORDINATE_ENDPOINT = "http://api.xdmtk.org/?reqcoords=1";
         private String REQUEST_ENDPOINT = "http://api.xdmtk.org/?requests=1";
@@ -71,11 +74,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private TextView lastUpdatedText = (TextView)findViewById(R.id.text_view);
         private int UPDATE_INTERVAL = 25;
         public boolean cameraMoveLock = false;
+        private double lat;
+        private double lon;
+
 
 
         public BikeCoordinates(GoogleMap m) {
             this.myMap = m;
             m.setOnCameraMoveStartedListener(this);
+
+            final Button recenter = findViewById(R.id.recenter);
+            recenter.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    moveToCurrentLocation(myMap, new LatLng(lat,lon));
+                }
+            });
 
         }
 
@@ -87,13 +101,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private void moveToCurrentLocation(GoogleMap myMapP, LatLng currentLocation)
         {
             myMapP.addMarker(new MarkerOptions().position(currentLocation).title("Current Bike Location"));
-            myMapP.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
-            // Zoom in, animating the camera.
-            myMapP.animateCamera(CameraUpdateFactory.zoomIn());
-            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
-            myMapP.animateCamera(CameraUpdateFactory.zoomTo(15), 2000, null);
-
-
+            myMapP.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation,15));
         }
 
         public void run() {
@@ -120,7 +128,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                                     // For warmed up GPS coordinates, split by comma should only have 5 values
                                     if (coordinates.length <= 5) {
-                                        LatLng currentCoordinates = new LatLng(Double.valueOf(coordinates[3]), Double.valueOf(coordinates[4]));
+                                        lat = Double.valueOf(coordinates[3]);
+                                        lon = Double.valueOf(coordinates[4]);
+
+                                        LatLng currentCoordinates = new LatLng(lat,lon);
                                         if (!cameraMoveLock) {
                                             moveToCurrentLocation(myMap, currentCoordinates);
                                         }
