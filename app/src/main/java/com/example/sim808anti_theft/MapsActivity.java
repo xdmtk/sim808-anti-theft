@@ -136,15 +136,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         TextView updateTimerText = (TextView) findViewById(R.id.update_timer);
                                         int seconds = UPDATE_INTERVAL;
 
-                                        while (seconds) {
-
-
+                                        while (seconds > 0) {
+                                            String updateTextSet = "  Next Update: " + seconds + " seconds";
+                                            updateTimerText.setText(updateTextSet);
+                                            seconds--;
+                                            try {
+                                                Thread.sleep(1000);
+                                            }
+                                            catch (Exception e){
+                                                System.out.print(e);
+                                            }
                                         }
                                     }
                                 });
                             }
                         };
-                        Thread.sleep(3000);
+                        Thread.sleep(UPDATE_INTERVAL*1000);
                     } catch (Exception e) {
                         System.out.print(e);
                     }
