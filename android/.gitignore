@@ -1,0 +1,4 @@
+*.api
+*.uno.*
+sim808docs/
+.idea/

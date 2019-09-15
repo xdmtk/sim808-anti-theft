@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme"
+/>
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="459dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/longitude_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Longitude:" />
+
+    <TextView
+        android:id="@+id/latitude_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Latitude:" />
+
+    <TextView
+        android:id="@+id/device_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Device Status:" />
+
+    <TextView
+        android:id="@+id/text_view"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:text="Last Updated: " />
+
+    <TextView
+        android:id="@+id/update_timer"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:text="Next Update: " />
+
+    <Button
+        android:id="@+id/recenter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Re-center" />
+
+    <Button
+        android:id="@+id/lock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Lock" />
+</LinearLayout>
